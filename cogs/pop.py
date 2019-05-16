@@ -80,7 +80,6 @@ class Pop(commands.Cog):
         self.dl_avys_task = self.bot.loop.create_task(self.dl_avys())
         self.batch_remove_task = self.bot.loop.create_task(self.batch_member_remove())
         self.synced = asyncio.Event()
-        self.wh = None
         
         self.bot.loop.create_task(self.first_sync())
 
@@ -235,16 +234,6 @@ class Pop(commands.Cog):
         try:
             await self.bot.wait_until_ready()
             while True:
-                while not self.wh:
-                    self.wh = discord.utils.get(
-                        await self.bot.get_guild(self.bot.avy_guild).webhooks(),
-                        channel_id=self.bot.avy_channel
-                    )
-                    if self.wh:
-                        logger.info(f'found webhook {self.wh.name} for {self.bot.avy_channel}')
-                        break
-                    else:
-                        await asyncio.sleep(2)
                 if self.bot.avy_posting_queue.qsize() == 0:
                     await asyncio.sleep(2)
 
@@ -276,7 +265,7 @@ class Pop(commands.Cog):
                     if tries > 0:
                         to_post = {k: discord.File(BytesIO(v.getbuffer()), filename=f'{k}.{"png" if not k.startswith("a_") else "gif"}') for k, v in backup.items()}
                     try:
-                        message = await self.wh.send(content='\n'.join(to_post.keys()), wait=True, files=list(to_post.values()))
+                        message = await self.bot.wh.send(content='\n'.join(to_post.keys()), wait=True, files=list(to_post.values()))
                         transformed = []
                         for a in message.attachments:
                             if a.height:
