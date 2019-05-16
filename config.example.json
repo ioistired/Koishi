@@ -1,0 +1,19 @@
+{
+	"BOT_INVITE": "",
+	"SERVER_INVITE": "",
+	"DB_URI": "postgresql:///koishi?search_path=koi_test,public",
+	"TOKEN": "",
+	"STARTUP_EXTENSIONS": [
+		"cogs.admin",
+		"cogs.avatar",
+		"cogs.basic",
+		"cogs.pop",
+		"cogs.stats",
+	],
+	"ADMINS": [
+	],
+	"AVY_GUILD": 1234,
+	"AVY_CHANNEL": 5678,
+	"WEBHOOK_URL": "",
+	"DEFAULT_PREFIX": "+"
+}
