@@ -22,7 +22,6 @@ STARTUP_EXTENSIONS = config["STARTUP_EXTENSIONS"]
 ADMINS = set(config["ADMINS"])
 AVY_GUILD = config["AVY_GUILD"]
 AVY_CHANNEL = config["AVY_CHANNEL"]
-WEBHOOK_URL = config["WEBHOOK_URL"]
 DEFAULT_PREFIX = config["DEFAULT_PREFIX"]
 
 logging.basicConfig(level=logging.INFO)
@@ -110,7 +109,6 @@ async def run():
         logger.exception('Could not set up postgresql')
         return
     bot.session = aiohttp.ClientSession()
-    bot.wh = discord.Webhook.from_url(WEBHOOK_URL, adapter=discord.AsyncWebhookAdapter(bot.session))
     bot.pool = pool
     bot.start_time = datetime.datetime.utcnow()
     try:

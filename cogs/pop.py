@@ -233,6 +233,7 @@ class Pop(commands.Cog):
         logger.info('started avatar posting task')
         try:
             await self.bot.wait_until_ready()
+            chan = self.bot.get_guild(self.bot.avy_guild).get_channel(self.bot.avy_channel)
             while True:
                 if self.bot.avy_posting_queue.qsize() == 0:
                     await asyncio.sleep(2)
@@ -265,7 +266,7 @@ class Pop(commands.Cog):
                     if tries > 0:
                         to_post = {k: discord.File(BytesIO(v.getbuffer()), filename=f'{k}.{"png" if not k.startswith("a_") else "gif"}') for k, v in backup.items()}
                     try:
-                        message = await self.bot.wh.send(content='\n'.join(to_post.keys()), wait=True, files=list(to_post.values()))
+                        message = await chan.send(content='\n'.join(to_post.keys()), files=list(to_post.values()))
                         transformed = []
                         for a in message.attachments:
                             if a.height:
