@@ -48,7 +48,7 @@ coglogger = logging.getLogger('cogs')
 coglogger.addHandler(koishi_file_handler)
 
 description = '''Lies and slander follow'''
-bot = commands.AutoShardedBot(command_prefix=commands.when_mentioned_or(DEFAULT_PREFIX), description=description)
+bot = commands.AutoShardedBot(command_prefix=DEFAULT_PREFIX, description=description)
 bot.avy_guild = AVY_GUILD
 bot.avy_channel = AVY_CHANNEL
 bot.admins = ADMINS
