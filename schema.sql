@@ -19,8 +19,9 @@ CREATE TABLE koi_test.avy_urls(
 	msgid BIGINT NOT NULL,
 	id BIGINT NOT NULL,
 	size BIGINT NOT NULL,
-	height BIGINT NOT NULL,
-	width BIGINT NOT NULL);
+	-- these are allowed to be null in case the embed server fails to detect the image size
+	height BIGINT,
+	width BIGINT);
 
 CREATE TABLE koi_test.discrims(
 	uid BIGINT NOT NULL,
