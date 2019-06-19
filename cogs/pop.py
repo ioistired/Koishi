@@ -82,7 +82,6 @@ class Pop(commands.Cog):
         self.post_avy_task = self.bot.loop.create_task(self.batch_post_avatars())
         self.dl_avys_task = self.bot.loop.create_task(self.dl_avys())
         self.batch_remove_task = self.bot.loop.create_task(self.batch_member_remove())
-        self.synced = asyncio.Event()
         
         self.bot.loop.create_task(self.first_sync())
 
@@ -313,16 +312,15 @@ class Pop(commands.Cog):
             logger.warning('Batching task for avatar posting was cancelled')
 
     async def first_sync(self):
-        if self.bot.first_synced:
+        if self.bot.synced.is_set():
             return # Already successfully synced the bot after initial boot
         await self.bot.wait_until_ready()
-        utcnow = datetime.datetime.utcnow()
 
+        utcnow = datetime.datetime.utcnow()
         await self.bot.request_offline_members(*[guild for guild in self.bot.guilds if guild.large])
         await self.cog_log(True, utcnow - datetime.timedelta(microseconds=1))
         self.add_bulk_members(list(self.bot.get_all_members()), utcnow)
-        self.synced.set()
-        self.bot.first_synced = True
+        self.bot.synced.set()
         logger.info("synced!")
 
     def add_bulk_members(self, members, utcnow):
@@ -389,14 +387,14 @@ class Pop(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        await self.synced.wait()
+        await self.bot.synced.wait()
         utcnow = datetime.datetime.utcnow()
         do_full = sum(1 for g in self.bot.guilds if g.get_member(member.id)) == 1
         self.add_member(member, utcnow, do_full)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        await self.synced.wait()
+        await self.bot.synced.wait()
         utcnow = datetime.datetime.utcnow()
         do_full = sum(1 for g in self.bot.guilds if g.get_member(member.id)) == 0
         self.fill_updates(member.id, member.guild.id, 'left_guild', utcnow, do_full) #untested stuff
@@ -404,7 +402,7 @@ class Pop(commands.Cog):
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
-        await self.synced.wait()
+        await self.bot.synced.wait()
         utcnow = datetime.datetime.utcnow()
         aid = after.id
 
@@ -422,7 +420,7 @@ class Pop(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        await self.synced.wait()
+        await self.bot.synced.wait()
         utcnow = datetime.datetime.utcnow()
         aid = after.id
 
@@ -443,7 +441,7 @@ class Pop(commands.Cog):
             It is rare to have too many dups of members in new guilds.
             Regardless, dups don't matter and are easy to deal with.
         """
-        await self.synced.wait()
+        await self.bot.synced.wait()
         utcnow = datetime.datetime.utcnow()
         self.add_bulk_members(guild.members, utcnow)
         logger.info(f'Added {guild.member_count} people to queues!')
@@ -454,7 +452,7 @@ class Pop(commands.Cog):
             Figuring out which users the bot can still see is important.
             Need to find a better way to figure out if the user is in any other mutual guilds.
         """
-        await self.synced.wait()
+        await self.bot.synced.wait()
         utcnow = datetime.datetime.utcnow()
         for member in guild.members:
             if sum(1 for g in self.bot.guilds if g.get_member(member.id)) == 0:
@@ -472,7 +470,7 @@ def setup(bot):
         bot.avy_urls = dict()
     if not hasattr(bot, 'avy_posting_queue'):
         bot.avy_posting_queue = asyncio.Queue(maxsize = 50)
-    if not hasattr(bot, 'first_synced'):
-        bot.first_synced = False
+    if not hasattr(bot, 'synced'):
+        bot.synced = asyncio.Event()
 
     bot.add_cog(Pop(bot))
