@@ -15,6 +15,7 @@ status = {'online':(67, 181, 129),
           'idle':(250, 166, 26),
           'dnd':(240, 71, 71),
           'offline':(116, 127, 141)}
+status_names = set(status)
 discord_neutral = (188,188,188)
 
 query_base = '''
@@ -182,8 +183,7 @@ class Stats(commands.Cog):
             ''', target.id)
             async with self.bot.session.get(str(target.avatar_url_as(format='png'))) as r:
                 avydata = BytesIO(await r.read())
-            allowed_keys = {'online', 'offline', 'idle', 'dnd'}
-            statuses = {row['status']: row['sum'] for row in rows if row['status'] in allowed_keys}
+            statuses = {row['status']: row['sum'] for row in rows if row['status'] in status_names}
             data = await self.bot.loop.run_in_executor(None, self._piestatus, avydata, statuses)
             await ctx.send(file=discord.File(data, filename=f'{target.display_name}_pie_status.png'))
 
@@ -251,8 +251,7 @@ class Stats(commands.Cog):
                 group by status
                 order by sum desc
             ''', target.id)
-            allowed_keys = {'online', 'offline', 'idle', 'dnd'}
-            statuses = {row['status']: row['sum'] for row in rows if row['status'] in allowed_keys}
+            statuses = {row['status']: row['sum'] for row in rows if row['status'] in status_names}
             data = await self.bot.loop.run_in_executor(None, self._barstatus, f'{target}\'s uptime in the past 30 days', statuses)
             await ctx.send(file=discord.File(data, filename=f'{target.display_name}_bar_status.png'))
 
