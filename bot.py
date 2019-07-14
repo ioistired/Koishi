@@ -19,7 +19,7 @@ SERVER_INVITE = config["SERVER_INVITE"]
 DB_URI = config["DB_URI"]
 TOKEN = config["TOKEN"]
 STARTUP_EXTENSIONS = [
-	'jishaku'
+	'jishaku',
 	'ben_cogs.sql',
 	'cogs.avatar',
 	'cogs.basic',
