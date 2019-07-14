@@ -1,4 +1,5 @@
 asyncpg
+ben_cogs[sql]
 discord.py
 Pillow>=4.2.0
 psutil

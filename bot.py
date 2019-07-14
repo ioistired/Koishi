@@ -18,7 +18,14 @@ BOT_INVITE = config["BOT_INVITE"]
 SERVER_INVITE = config["SERVER_INVITE"]
 DB_URI = config["DB_URI"]
 TOKEN = config["TOKEN"]
-STARTUP_EXTENSIONS = config["STARTUP_EXTENSIONS"]
+STARTUP_EXTENSIONS = [
+	'jishaku'
+	'ben_cogs.sql',
+	'cogs.avatar',
+	'cogs.basic',
+	'cogs.pop',
+	'cogs.stats',
+]
 ADMINS = set(config["ADMINS"])
 AVY_GUILD = config["AVY_GUILD"]
 AVY_CHANNEL = config["AVY_CHANNEL"]
