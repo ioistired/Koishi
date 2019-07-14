@@ -1,11 +1,15 @@
-import discord
-from discord.ext import commands
-import time
-import math
 import asyncio
 import datetime
-from PIL import Image
+import math
+import time
+import typing
 from io import BytesIO
+
+import aiohttp
+import discord
+from discord.ext import commands
+from PIL import Image
+
 from .utils import images
 
 class Timetracker:
@@ -13,7 +17,7 @@ class Timetracker:
         self.title = title
         self.values = values
         self.times = [time.perf_counter()]
-    
+
     def update(self):
         self.times.append(time.perf_counter())
 
@@ -24,6 +28,30 @@ class Timetracker:
         return msg
 
 class Avatar(commands.Cog):
+    UPLOAD_SIZE_LIMIT = 8_000_000
+    QUERY = '''
+        select
+            avy_urls.url
+        from (
+            select
+                avatar, first_seen
+            from (
+                select
+                    avatar, lag(avatar) over (order by first_seen desc) as avatar_old, first_seen
+                from avatars
+                where
+                    avatars.uid = $1
+            ) a
+            where
+                avatar != avatar_old or avatar_old is null
+        ) avys
+        left join avy_urls on
+            avy_urls.hash = avys.avatar
+        order by avys.first_seen desc
+        offset $2 rows
+        fetch first $3 rows only
+     '''
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -31,32 +59,10 @@ class Avatar(commands.Cog):
     async def avyquilt(self, ctx, member : discord.Member = None):
         member = member or ctx.author
 
-        query = '''
-            select
-                avy_urls.url
-            from (
-                select
-                    avatar, first_seen
-                from (
-                    select
-                        avatar, lag(avatar) over (order by first_seen desc) as avatar_old, first_seen
-                    from avatars
-                    where
-                        avatars.uid = $1
-                ) a
-                where
-                    avatar != avatar_old or avatar_old is null
-            ) avys
-            left join avy_urls on
-                avy_urls.hash = avys.avatar
-            order by avys.first_seen desc
-            limit 100
-        '''
-
         tracker = Timetracker('', 'queried', 'downloaded', 'created file')
         msg = await ctx.send(tracker.display())
 
-        urls = await ctx.bot.pool.fetch(query, member.id)
+        urls = await ctx.bot.pool.fetch(self.QUERY, member.id, 0, 100)
 
         tracker.update()
         await msg.edit(content=tracker.display())
@@ -98,9 +104,43 @@ class Avatar(commands.Cog):
             buffer = BytesIO()
             base.save(buffer, 'png')
             buffer.seek(0)
-            buffer = images.resize_to_limit(buffer, 8000000)
+            buffer = images.resize_to_limit(buffer, self.UPLOAD_SIZE_LIMIT)
             return buffer
 
+    @commands.command()
+    async def avyold(self, ctx, member: typing.Optional[discord.Member] = None, index=1):
+        member = member or ctx.author
+        if index < 1:
+            await ctx.send('Index must be ≥1.')
+            return
+        offset = index - 1
+        url = await self.bot.pool.fetchval(self.QUERY, member.id, offset, 1)
+        if url is None:
+            await ctx.send('Avatar not found.')
+            return
+
+        avy = None
+        try:
+            async with self.bot.session.get(url) as r:
+                if r.status in range(200, 300):
+                    avy = BytesIO(await r.read())
+        except (asyncio.TimeoutError, aiohttp.ClientError):
+            pass
+
+        if avy is None:
+            await ctx.send('Error downloading avatar.')
+            return
+
+        avy = await self.bot.loop.run_in_executor(None, self.resize, avy)
+        await ctx.send(file=discord.File(avy, f'{member.id}_avyold_{index}.png'))
+
+    @classmethod
+    def resize(cls, avy):
+        im = Image.open(avy).resize((200, 200), resample=Image.BICUBIC)
+        out = BytesIO()
+        im.save(out, 'png')
+        out.seek(0)
+        return images.resize_to_limit(out, cls.UPLOAD_SIZE_LIMIT)
 
 def setup(bot):
     bot.add_cog(Avatar(bot))
