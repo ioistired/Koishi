@@ -31,13 +31,13 @@ class Avatar(commands.Cog):
     UPLOAD_SIZE_LIMIT = 8_000_000
     QUERY = '''
         select
-            avy_urls.url
+            avy_urls.url, ref
         from (
             select
-                avatar, first_seen
+                ref, avatar, first_seen
             from (
                 select
-                    avatar, lag(avatar) over (order by first_seen desc) as avatar_old, first_seen
+                    ref, avatar, lag(avatar) over (order by first_seen desc) as avatar_old, first_seen
                 from avatars
                 where
                     avatars.uid = $1
@@ -67,13 +67,7 @@ class Avatar(commands.Cog):
         tracker.update()
         await msg.edit(content=tracker.display())
 
-        async def url_to_bytes(url):
-            if not url:
-                return None
-            async with ctx.bot.session.get(url) as r:
-                return BytesIO(await r.read())
-
-        avys = await asyncio.gather(*[url_to_bytes(url['url']) for url in urls])
+        avys = await asyncio.gather(*[self.fetch(url['url']) for url in urls])
 
         tracker.update()
         await msg.edit(content=tracker.display())
@@ -119,13 +113,7 @@ class Avatar(commands.Cog):
             await ctx.send('Avatar not found.')
             return
 
-        avy = None
-        try:
-            async with self.bot.session.get(url) as r:
-                if r.status in range(200, 300):
-                    avy = BytesIO(await r.read())
-        except (asyncio.TimeoutError, aiohttp.ClientError):
-            pass
+        avy = await self.fetch(url)
 
         if avy is None:
             await ctx.send('Error downloading avatar.')
@@ -134,6 +122,44 @@ class Avatar(commands.Cog):
         avy = await self.bot.loop.run_in_executor(None, self.resize, avy)
         await ctx.send(file=discord.File(avy, f'{member.id}_avyold_{index}.png'))
 
+    @commands.command()
+    async def avykill(self, ctx, index: int):
+        if index < 1:
+            await ctx.send('Index must be ≥1.')
+            return
+        offset = index - 1
+        row = await self.bot.pool.fetchrow(self.QUERY, ctx.author.id, offset, 1)
+        if row is None:
+            await ctx.send('Avatar not found.')
+            return
+
+        url, ref = row
+        avy = await self.fetch(url)
+        if avy is None:
+            await ctx.send('Error downloading avatar.')
+            return
+        avy = await self.bot.loop.run_in_executor(None, self.resize, avy)
+        confirmation_message = await ctx.send(
+            'Is this the avatar you want to delete? (y/n)',
+            file=discord.File(avy, f'{ctx.author.id}_avyold_{index}.png'))
+
+        try:
+            m = await self.bot.wait_for(
+                'message',
+                check=lambda m: (m.author, m.channel) == (ctx.author, ctx.channel) and m.content.lower() in 'yn',
+                timeout=30)
+        except asyncio.TimeoutError:
+            await ctx.send('You took too long. Aborting.')
+            return
+
+        if m.content.lower() != 'y':
+            await ctx.send('Cancelling.')
+            return
+
+        await self.bot.pool.execute('delete from avatars where ref = $1', ref)
+        await ctx.send('Avatar deleted.')
+        await confirmation_message.delete()
+
     @classmethod
     def resize(cls, avy):
         im = Image.open(avy).resize((200, 200), resample=Image.BICUBIC)
@@ -141,6 +167,17 @@ class Avatar(commands.Cog):
         im.save(out, 'png')
         out.seek(0)
         return images.resize_to_limit(out, cls.UPLOAD_SIZE_LIMIT)
+
+    async def fetch(self, url):
+        if not url:
+            return None
+        try:
+            async with self.bot.session.get(url) as r:
+                if r.status in range(200, 300):
+                    return BytesIO(await r.read())
+                return None
+        except (asyncio.TimeoutError, aiohttp.ClientError):
+            return None
 
 def setup(bot):
     bot.add_cog(Avatar(bot))
