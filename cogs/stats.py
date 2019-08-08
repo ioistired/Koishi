@@ -44,7 +44,7 @@ with status_data as(
             where uid=0
             order by first_seen desc)
             union
-            (select event as status, time as first_seen
+            (select event::text::status as status, time as first_seen
             from cog_log
             order by first_seen desc)
             union
