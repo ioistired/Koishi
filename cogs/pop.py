@@ -40,11 +40,6 @@ scheme = {
             'status' : 'TEXT',
             'first_seen' : 'TIMESTAMP WITHOUT TIME ZONE'
             },
-         'games' : {
-            'uid' : 'BIGINT',
-            'game' : 'TEXT',
-            'first_seen' : 'TIMESTAMP WITHOUT TIME ZONE'
-            }
          }
 scheme2 = {
          'names' : {
@@ -67,10 +62,6 @@ scheme2 = {
             'key' : 'uid',
             'value' : 'status',
             },
-         'games' : {
-            'key' : 'uid',
-            'value' : 'game',
-            }
          }
 
 
@@ -123,7 +114,7 @@ class Pop(commands.Cog):
         self.bot.pending_updates[recordtype] = []
         async with self.bot.pool.acquire() as con:
             result = await con.copy_records_to_table(recordtype, records=to_insert, columns=scheme[recordtype].keys(),schema_name='koi_test')
-            if len(to_insert) > 20000 and recordtype not in ['statuses','games']:
+            if len(to_insert) > 20000 and recordtype != 'statuses':
                 key = scheme2[recordtype]['key']
                 value = scheme2[recordtype]['value']
                 query = f'''
@@ -336,7 +327,6 @@ class Pop(commands.Cog):
                                                   ))
             self.bot.pending_updates['discrims'].append((m.id, m.discriminator, utcnow))
             self.bot.pending_updates['statuses'].append((m.id, m.status.name, utcnow))
-            #self.bot.pending_updates['games'].append((m.id, m.activity.name if m.activity else None, utcnow))
             self.bot.avy_urls[m.avatar if m.avatar else m.default_avatar.name] = str(m.avatar_url_as(static_format='png'))
 
 
@@ -351,7 +341,6 @@ class Pop(commands.Cog):
                                                   ))
             self.bot.pending_updates['discrims'].append((m.id, m.discriminator, utcnow))
             self.bot.pending_updates['statuses'].append((m.id, m.status.name, utcnow))
-            #self.bot.pending_updates['games'].append((m.id, m.activity.name if m.activity else None, utcnow))
             self.bot.avy_urls[m.avatar if m.avatar else m.default_avatar.name] = str(m.avatar_url_as(static_format='png'))
 
     def fill_updates(self, uid, sid, msg, utcnow, full = True):
@@ -429,11 +418,8 @@ class Pop(commands.Cog):
 
         lowest = discord.utils.find(lambda x: x.get_member(aid) is not None, sorted(self.bot.guilds, key=lambda x: x.id)) # stolen from luma I think
         
-        if after.guild.id == lowest.id:
-            if before.status != after.status:
-                self.bot.pending_updates['statuses'].append((aid, after.status.name, utcnow))
-            #if before.activity != after.activity and not after.bot:
-                #self.bot.pending_updates['games'].append((aid, after.activity.name if after.activity else None, utcnow))
+        if after.guild.id == lowest.id and before.status != after.status:
+            self.bot.pending_updates['statuses'].append((aid, after.status.name, utcnow))
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
