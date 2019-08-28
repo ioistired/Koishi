@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 import os.path
 from io import BytesIO
 
@@ -68,13 +69,14 @@ scheme2 = {
 class Pop(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.logger = logging.getLogger('koishi')
         self.bg_tasks = {recordtype : self.bot.loop.create_task(self.batching_task(recordtype)) for recordtype in scheme.keys()}
         self.sync_task = self.bot.loop.create_task(self.sync())
         self.post_avy_task = self.bot.loop.create_task(self.batch_post_avatars())
         self.dl_avys_task = self.bot.loop.create_task(self.dl_avys())
         self.batch_remove_task = self.bot.loop.create_task(self.batch_member_remove())
-        
         self.bot.loop.create_task(self.first_sync())
+
 
     def cog_unload(self):
         logger.info('die')
