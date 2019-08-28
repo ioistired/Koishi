@@ -75,7 +75,7 @@ class Pop(commands.Cog):
         self.post_avy_task = self.bot.loop.create_task(self.batch_post_avatars())
         self.dl_avys_task = self.bot.loop.create_task(self.dl_avys())
         self.batch_remove_task = self.bot.loop.create_task(self.batch_member_remove())
-        self.bot.loop.create_task(self.first_sync())
+        self.bot.loop.create_task(self.sync())
 
 
     def cog_unload(self):
@@ -304,7 +304,7 @@ class Pop(commands.Cog):
         except asyncio.CancelledError:
             logger.warning('Batching task for avatar posting was cancelled')
 
-    async def first_sync(self):
+    async def sync(self):
         if self.bot.synced.is_set():
             return # Already successfully synced the bot after initial boot
         await self.bot.wait_until_ready()
