@@ -123,6 +123,8 @@ async def run():
         return
     bot.session = aiohttp.ClientSession()
     bot.pool = pool
+    for extension in STARTUP_EXTENSIONS:
+        bot.load_extension(extension)
     bot.start_time = datetime.datetime.utcnow()
     try:
         await bot.start(TOKEN)
@@ -133,10 +135,5 @@ async def run():
         
     
 if __name__ == "__main__":
-    for extension in STARTUP_EXTENSIONS:
-        try:
-            bot.load_extension(extension)
-        except Exception as e:
-            logger.exception(f'Failed to load extension {extension}.')
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())
