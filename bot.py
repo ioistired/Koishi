@@ -20,7 +20,7 @@ DB_URI = config["DB_URI"]
 TOKEN = config["TOKEN"]
 STARTUP_EXTENSIONS = [
 	'jishaku',
-	'ben_cogs.sql',
+	'bot_bin.sql',
 	'cogs.avatar',
 	'cogs.basic',
 	'cogs.pop',
