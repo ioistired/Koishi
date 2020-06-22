@@ -1,5 +1,6 @@
 asyncpg
-ben_cogs[sql]
+bot_bin[sql]
 discord.py
-Pillow>=4.2.0
+Pillow>=7.1.2,<8.0.0
 psutil
+jishaku
