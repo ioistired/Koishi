@@ -70,8 +70,6 @@ class Pop(commands.Cog):
     def cog_unload(self):
         logger.info('die')
         utcnow = datetime.datetime.utcnow()
-        self.post_avy_task.cancel()
-        self.dl_avys_task.cancel()
         self.batch_remove_task.cancel()
         for recordtype, task in self.bg_tasks.items():
             logger.info(f'canceling {recordtype}')
