@@ -61,9 +61,6 @@ bot.admins = ADMINS
 bot.bot_invite = BOT_INVITE
 bot.server_invite = SERVER_INVITE
 
-async def is_owner(user):
-    return user.id in bot.admins or await super(type(bot), bot).is_owner(user)
-bot.is_owner = is_owner
 
 @bot.event
 async def on_ready():
@@ -71,9 +68,6 @@ async def on_ready():
     logger.info(f'id {bot.user.id}')
     logger.info(f'Running {discord.__version__}')
 
-@bot.check
-async def owner_check(ctx):
-    return await ctx.bot.is_owner(ctx.author)
 
 
 @bot.command(hidden=True)
