@@ -21,6 +21,7 @@ TOKEN = config["TOKEN"]
 STARTUP_EXTENSIONS = [
 	'jishaku',
 	'bot_bin.sql',
+	'cogs.avatar',
 	'cogs.basic',
 	'cogs.pop',
 	'cogs.stats',
